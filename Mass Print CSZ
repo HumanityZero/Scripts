@@ -1,0 +1,107 @@
+cd "P:\Series Dwgs"
+$dir = "P:\Series Dwgs\EBI-Environmental Burn In\Micron\EBI-13.5-15-SCT-WC\Engineering"
+$enddir = "C:\DWG"
+
+$dwg = ((	"EBI-13.5-CL00",		"C"	),
+(	"EBI-13.5-CA00",		"A"	),
+(	"EBI-13.5-CA01",		"A"	),
+(	"EBI-13.5-CA02",		"A"	),
+(	"EBI-13.5-CA03",		"A"	),
+(	"EBI-13.5-CA04",		"B"	),
+(	"EBI-13.5-CA05",		"A"	),
+(	"EBI-13.5-CA07",		"A"	),
+(	"EBI-13.5-CF00",		"A"	),
+(	"EBI-13.5-CF01",		"A"	),
+(	"EBI-13.5-CF02",		"A"	),
+(	"EBI-13.5-CF03",		"A"	),
+(	"EBI-13.5-CF04",		"A"	),
+(	"EBI-13.5-CF05",		"B"	),
+(	"EBI-13.5-CF06",		"A"	),
+(	"EBI-13.5-CF07",		"B"	),
+(	"EBI-13.5-CF08",		"A"	),
+(	"EBI-13.5-CF10",		"A"	),
+(	"EBI-13.5-CF12",		"A"	),
+(	"EBI-13.5-CF24",		"A"	),
+(	"EBI-13.5-CF25",		"B"	),
+(	"EBI-13.5-CF26",		"B"	),
+(	"EBI-13.5-CF27",		"A"	),
+(	"EBI-13.5-CF28",		"A"	),
+(	"EBI-13.5-CF29",		"A"	),
+(	"EBI-13.5-CF30",		"A"	),
+(	"EBI-13.5-CF50",		"A"	),
+(	"EBI-13.5-CF51",		"A"	),
+(	"EBI-13.5-CF52",		"A"	),
+(	"EBI-13.5-CF53",		"A"	),
+(	"EBI-13.5-CF54",		"A"	),
+(	"EBI-13.5-CF55",		"A"	),
+(	"EBI-13.5-CF56",		"C"	),
+(	"EBI-13.5-CF57",		"A"	),
+(	"EBI-13.5-CF58",		"A"	),
+(	"EBI-13.5-CF59",		"C"	),
+(	"EBI-13.5-CF60",		"C"	),
+(	"EBI-13.5-CF61",		"A"	),
+(	"EBI-13.5-CF62",		"A"	),
+(	"EBI-13.5-CF63",		"A"	),
+(	"EBI-13.5-CF64",		"A"	),
+(	"EBI-13.5-CF65",		"A"	),
+(	"EBI-13.5-CF66",		"A"	),
+(	"EBI-13.5-CF67",		"A"	),
+(	"EBI-13.5-CF68",		"A"	),
+(	"EBI-13.5-CF69",		"A"	),
+(	"EBI-13.5-CF70",		"A"	),
+(	"EBI-13.5-CF71",		"A"	),
+(	"EBI-13.5-CF72",		"A"	),
+(	"EBI-13.5-CF73",		"A"	),
+(	"EBI-13.5-CF75",		"A"	),
+(	"EBI-13.5-CF76",		"A"	),
+(	"EBI-13.5-CF78",		"A"	),
+(	"EBI-13.5-CF100",		"B"	),
+(	"EBI-13.5-CF101",		"B"	),
+(	"EBI-13.5-CF102",		"B"	),
+(	"EBI-13.5-CF103",		"A"	),
+(	"EBI-13.5-CF104",		"A"	),
+(	"EBI-13.5-CF105",		"A"	),
+(	"EBI-13.5-CF106",		"B"	),
+(	"EBI-13.5-CF107",		"A"	),
+(	"EBI-13.5-CF108",		"A"	),
+(	"EBI-13.5-CF109",		"A"	),
+(	"EBI-13.5-CF111",		"A"	),
+(	"EBI-13.5-CF112",		"A"	),
+(	"EBI-13.5-CF115",		"A"	),
+(	"EBI-13.5-CB00",		"B"	),
+(	"EBI-13.5-EA00",		"B"	),
+(	"EBI-13.5-EW00",		"F"	),
+(	"EBI-13.5-EM00",		"F"	),
+(	"EBI-13.5-DA00",		"C"	),
+(	"EBI-13.5-DA00M",		"B"	),
+(	"EBI-13.5-RF00",		"B"	),
+(	"EBI-13.5-RF00M",		"C"	))
+
+remove-item C:\DWG -recurse -force -ea 0
+New-Item "C:\DWG" -type directory -ea 0 | out-null
+foreach ($item in $dwg){
+    $pass=0
+    write-host "$item" -nonewline
+    get-childitem $dir -recurse -EA stop | where {$_.extension -eq ".dwg" -or $_.extension -eq ".SLDDRW"  -or $_.extension -eq ".xlsx"  -or $_.extension -eq ".xls"  -or $_.extension -eq ".doc"  -or $_.extension -eq ".pdf" -and $_.BaseName -match ($item[0]) -and $_.BaseName -match "REV $($item[1])"} | % {
+        cp $_.FullName $enddir
+        Write-host "-found w/  REV stamp $($item[1],$_.BaseName)" -foregroundcolor green
+        #Start-Process -FilePath $_.FullName –Verb Print -PassThru | %{sleep 10;$_} | kill
+        continue
+    }
+    get-childitem $dir -recurse -EA stop | where {$_.extension -eq ".dwg" -or $_.extension -eq ".SLDDRW"  -or $_.extension -eq ".xlsx"  -or $_.extension -eq ".xls"  -or $_.extension -eq ".doc"  -or $_.extension -eq ".pdf" -and $_.BaseName -like ($item[0])} | % {
+        cp $_.FullName $enddir
+        write-host "-found w/o REV stamp $($item[1],$_.BaseName)"
+        #Start-Process -FilePath $_.FullName –Verb Print -PassThru | %{sleep 10;$_} | kill
+        continue
+    }
+    for($i=1; $i -lt 8; $i++){
+        get-childitem $dir -recurse -EA stop | where {$_.extension -eq ".pdf" -and $_.BaseName -like "$($item[0])-$i"} | % {
+            cp $_.FullName $enddir
+            write-host "-found multi page $($item[1],$_.BaseName)" -foregroundcolor green
+            #Start-Process -FilePath $_.FullName –Verb Print -PassThru | %{sleep 10;$_} | kill
+            $pass=1;
+        }
+    }
+    if($pass=0){$i = $null; continue}
+    if($pass=0){write-host "-no match!" -foregroundcolor red}
+}
