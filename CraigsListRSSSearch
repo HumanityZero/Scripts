@@ -1,0 +1,135 @@
+# CraigsListRSSSearch / Powershell Script / greg_thestpierres.com
+# Script requires PowerShell 3.0 or above: http://www.microsoft.com/en-us/download/details.aspx?id=34595
+# Add RSS feed URL's to feedlist.txt (Use the RSS feed link on bottom right of CL page)
+# Add RSS URL's without the location and dot, i.e.: http://providence.
+# Add locations you want to search to locations.txt, they will be appended to the URL's.
+# Add keywords you want excluded from title search results to: exclusions.txt
+# The rssfeed.trk file is created and used by the script.
+
+$SendEmail = $TRUE	# Send Email
+$WHTitle = $true	# Write to screen when listing is processed.
+$UpdTrk = $true		# Update rssfeed.trk with listings checked.  False is useful for testing.
+[INT]$EmailSLEEP = 30		# Adds a delay when processing listings.  Useful when processing many listings.  Gmail will temp ban you if you hammer their server, 5 seconds is plenty.
+
+$EMailLogin = "JACKOWEESE@gmail.com"
+$Emailpasswd = "LEGO24lego"
+$EmailFrom = 'JACKOWEESE@gmail.com'
+[STRING]$EmailTo = '15133739531@tmomail.net'#, 'email2@domain.com'
+$SMTPServer = 'smtp.gmail.com'
+$SMTPPort = "587"
+
+FUNCTION CheckForFile($FileName) {
+
+	If ((Test-Path $FileName) -eq $False){
+
+		New-Item $FileName -type file | Out-Null
+		Write-Host
+		Write-Host $FileName "is empty, quitting."
+		Exit
+	
+	} 
+	
+	Else {
+
+	$CheckContent = Get-Content -path $FileName
+	If (! $CheckContent){
+
+		Write-Host $FileName "is empty, quitting."
+		Exit
+
+		}
+	
+	}
+	
+}
+$min=456
+$max=500
+
+CheckForFile("feedlist.txt")
+CheckForFile("locations.txt")
+$FeedList = Get-Content -path feedlist.txt
+$CheckLocs = Get-Content -path locations.txt
+	
+If ((Test-Path rssfeed.trk) -eq $False) {New-Item rssfeed.trk -type file | Out-Null} Else {$Feedtrk = Get-Content -path rssFeed.trk}
+If ((Test-Path exclusions.txt) -eq $False) {New-Item exclusions.txt -type file | Out-Null} Else {$ExList = Get-Content -path exclusions.txt}
+If (! $Feedtrk) {$Feedtrk = "Blank"}
+If (! $ExList) {$ExList = "Blank"}
+
+Foreach ($feed in $feedlist) { # Load base RSS feed links for processing
+
+	$Locations = Get-Content -path locations.txt
+	
+	Foreach ($loc in $locations) {	# Adds locations to base RSS feed links for processing and retrieve that feeds data
+
+		$locFeed = "http://" + $loc + "." + $feed
+		$rssFeed = [xml](New-Object System.Net.WebClient).DownloadString($locFeed)
+		$FeedData = $rssFeed.rdf.item 
+			
+		ForEach ($listing in $FeedData) { # Process each listing from RSS feed
+		
+			$CheckForData = $listing.Title | select -expand "#cdata-section" | Select-Object -First 1
+			
+			If ($CheckForData) { # Check if RSS feed has any listings and check if has keywords from the exclusions list
+		
+				$Excld = "False"
+				$CheckEx = $listing.Title | select -expand "#cdata-section" | Select-Object -First 1
+				$CheckEx = $CheckEx.ToLower()
+				
+				ForEach ($Ex in $ExList) {
+				
+					$Ex = $Ex.ToLower()
+					
+					If ($CheckEx.contains($Ex)) {
+						$Excld = "True"
+				
+					}
+
+				}
+
+				If ($Excld -eq "False") { # Check if listing has already been previously processed
+				
+					$listid = $listing.link.TrimEnd(".html")
+					$listid = $listid.substring($listid.length - 10, 10)
+					$UpdatedFeedtrk = $UpdatedFeedtrk + $listid + "`n"
+									
+					If (! $Feedtrk.Contains($listid)) {	# Process listing for emailing
+
+						$ListTitle = $listing.Title | select -expand "#cdata-section" | Select-Object -First 1
+						$ListTitle = $ListTitle.Replace("&#x0024;","$")
+						$ListLink = $listing.link
+						$ListDesc = $listing.description | select -expand "#cdata-section"
+						$ListDate = $listing.date
+						
+						$passwd = ConvertTo-SecureString $EmailPasswd -AsPlainText -Force
+						$creds = New-Object System.Management.Automation.PSCredential ($EmailLogin, $passwd)
+
+						$emailparams = @{
+
+							SmtpServer = $SMTPServer
+							Port = $SMTPPort
+							UseSsl = $true
+							Credential = $creds
+							From = $EmailFrom
+							To = $EmailTo
+							Subject = 'New CL Listing: ' + $ListTitle
+							Body = $ListLink + "`n`n" + $ListDate + "`n`n" + $ListDesc
+
+						}
+
+						If ($WHTitle -eq $true) {Write-Host $ListTitle}
+						Start-Sleep $EmailSLEEP
+						If ($SendEmail -eq $true) {Send-MailMessage @emailparams}
+					
+					}
+
+				}
+				
+			}
+
+		}
+
+	}
+	
+}
+
+If ($UpdTrk -eq $true) {$UpdatedFeedtrk | Out-File rssfeed.trk}
