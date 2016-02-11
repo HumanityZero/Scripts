@@ -1,0 +1,16 @@
+"Parse internet `nCurrent iteration:`n`n`n`n`n"
+$PauseTime = 30*10
+
+$host.ui.RawUI.WindowTitle = "$(get-date)"
+
+CD C:\Users\jbredestege\Downloads\CraigsListRSSSearch
+
+for($i=0;$i-lt9000;$i++){
+
+    C:\Users\jbredestege\Downloads\CraigsListRSSSearch\CraigsListRSSSearch.ps1
+    
+    for($t=0;$t-lt$PauseTime;$t++){
+        write-progress -id 42 -PercentComplete ($t/$PauseTime*100) -Activity "Waiting                                                    Iterations: $i"
+        Start-sleep -s 1
+    }write-progress -id 42 -Completed -Activity "Parsing"
+}
